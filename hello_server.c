@@ -31,13 +31,11 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	/* Create a stream socket	*/	
 	if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		fprintf(stderr, "Can't creat a socket\n");
 		exit(1);
 	}
 
-	/* Bind an address to the socket	*/
 	bzero((char *)&server, sizeof(struct sockaddr_in));
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
@@ -47,7 +45,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	/* queue up to 5 connect requests  */
 	listen(sd, 5);
 	(void) signal(SIGCHLD, reaper);
 
@@ -59,12 +56,12 @@ int main(int argc, char **argv)
 	    exit(1);
 	  }
 	  switch (fork()){
-	  case 0:		/* child */
+	  case 0:		
 		close(sd);
     write(new_sd, "Hello\n", 6);
     close(new_sd);
     exit(0);
-	  default:		/* parent */
+	  default:		
       close(new_sd);
       break;
 	  case -1:
@@ -73,7 +70,6 @@ int main(int argc, char **argv)
 	}
 }
 
-/*	reaper		*/
 void	reaper(int sig)
 {
 	int	status;
