@@ -34,7 +34,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	/* Create a stream socket	*/	
 	if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		fprintf(stderr, "Can't creat a socket\n");
 		exit(1);
@@ -50,7 +49,6 @@ int main(int argc, char **argv)
 	  exit(1);
 	}
 
-	/* Connecting to the server */
 	if (connect(sd, (struct sockaddr *)&server, sizeof(server)) == -1){
 	  fprintf(stderr, "Can't connect \n");
 	  exit(1);
