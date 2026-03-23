@@ -1,4 +1,5 @@
 /* TCP hello_server.c*/
+/* Run on VM1 with SERVER_TCP_PORT*/
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/unistd.h>
