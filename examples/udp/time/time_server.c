@@ -20,11 +20,10 @@ main(int argc, char *argv[])
 	struct  sockaddr_in fsin;	/* the from address of a client	*/
 	char	buf[100];		/* "input" buffer; any size > 0	*/
 	char    *pts;
-	int	sock;			/* server socket		*/
 	time_t	now;			/* current time			*/
-	int	alen;			/* from-address length		*/
+	socklen_t alen;			/* from-address length		*/
 	struct  sockaddr_in sin; /* an Internet endpoint address         */
-        int     s, type;        /* socket descriptor and socket type    */
+	int s;			/* socket descriptor */
 	int 	port=3000;
                                                                                 
 
@@ -46,20 +45,25 @@ main(int argc, char *argv[])
                                                                                                  
     /* Allocate a socket */
         s = socket(AF_INET, SOCK_DGRAM, 0);
-        if (s < 0)
-		fprintf(stderr, "can't creat socket\n");
+        if (s < 0) {
+		perror("socket");
+		exit(1);
+	}
                                                                                 
     /* Bind the socket */
-        if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0)
+        if (bind(s, (struct sockaddr *)&sin, sizeof(sin)) < 0) {
 		fprintf(stderr, "can't bind to %d port\n",port);
-        listen(s, 5);	
+		exit(1);
+	}
 	alen = sizeof(fsin);
 
 	while (1) {
 		
 		if (recvfrom(s, buf, sizeof(buf), 0,
-				(struct sockaddr *)&fsin, &alen) < 0)
-			fprintf(stderr, "recvfrom error\n");
+				(struct sockaddr *)&fsin, &alen) < 0) {
+			perror("recvfrom");
+			continue;
+		}
 
 		(void) time(&now);
         	pts = ctime(&now);

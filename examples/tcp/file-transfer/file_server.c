@@ -5,14 +5,33 @@
 #include <sys/socket.h>  // socket, bind, listen, accept, send, recv
 #include <netinet/in.h>  // sockaddr_in, INADDR_ANY, htons, htonl
 
-#define PORT  3000
-#define CHUNK 99
+#define DEFAULT_PORT 3000
+#define CHUNK 1024
 
-int main() {
+static int send_all(int socket_fd, const void *data, size_t length) {
+    const char *cursor = data;
+
+    while (length > 0) {
+        ssize_t sent = send(socket_fd, cursor, length, 0);
+        if (sent <= 0) return -1;
+        cursor += sent;
+        length -= (size_t)sent;
+    }
+    return 0;
+}
+
+int main(int argc, char **argv) {
     int sd, new_sd;
+    int port = DEFAULT_PORT;
     struct sockaddr_in server, client;
-    int client_len = sizeof(client);
+    socklen_t client_len = sizeof(client);
     int opt = 1;
+
+    if (argc > 2) {
+        fprintf(stderr, "Usage: %s [port]\n", argv[0]);
+        return 1;
+    }
+    if (argc == 2) port = atoi(argv[1]);
 
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         perror("socket"); exit(1);
@@ -22,7 +41,7 @@ int main() {
 
     memset(&server, 0, sizeof(server));
     server.sin_family      = AF_INET;
-    server.sin_port        = htons(PORT);
+    server.sin_port        = htons(port);
     server.sin_addr.s_addr = htonl(INADDR_ANY);
 
     //bind
@@ -31,7 +50,7 @@ int main() {
     }
     //listen
     listen(sd, 5);
-    printf("server listening on port %d\n", PORT);
+    printf("server listening on port %d\n", port);
 
     while (1) {
         new_sd = accept(sd, (struct sockaddr *)&client, &client_len);
@@ -50,21 +69,22 @@ int main() {
 
         FILE *fp = fopen(filename, "rb");
 
-        //error
+        // Send a one-byte status before the response body.
         if (fp == NULL) {
             char errmsg[100];
-            int len = snprintf(errmsg + 1, sizeof(errmsg) - 1,
+            int len = snprintf(errmsg, sizeof(errmsg),
                                "file '%s' not found", filename);
-            errmsg[0] = 'E';
-            send(new_sd, errmsg, len + 1, 0);
+            char status = 'E';
+            send_all(new_sd, &status, 1);
+            send_all(new_sd, errmsg, (size_t)len);
             printf("file not found: %s\n", filename);
-        //received file
         } else {
-            char buf[CHUNK + 1];
-            buf[0] = 'D';
+            char buf[CHUNK];
+            char status = 'D';
+            send_all(new_sd, &status, 1);
 
-            while ((n = fread(buf + 1, 1, CHUNK, fp)) > 0) {
-                send(new_sd, buf, n + 1, 0);
+            while ((n = (int)fread(buf, 1, sizeof(buf), fp)) > 0) {
+                if (send_all(new_sd, buf, (size_t)n) < 0) break;
             }
 
             fclose(fp);

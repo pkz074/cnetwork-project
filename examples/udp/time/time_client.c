@@ -29,13 +29,14 @@ main(int argc, char **argv)
 	char	now[100];		/* 32-bit integer to hold time	*/ 
 	struct hostent	*phe;	/* pointer to host information entry	*/
 	struct sockaddr_in sin;	/* an Internet endpoint address		*/
-	int	s, n, type;	/* socket descriptor and socket type	*/
+	int	s, n;	/* socket descriptor and response length	*/
 
 	switch (argc) {
 	case 1:
 		break;
 	case 2:
 		host = argv[1];
+		break;
 	case 3:
 		host = argv[1];
 		port = atoi(argv[2]);
@@ -50,7 +51,7 @@ main(int argc, char **argv)
         sin.sin_port = htons(port);
                                                                                         
     /* Map host name to IP address, allowing for dotted decimal */
-        if ( phe = gethostbyname(host) ){
+        if ((phe = gethostbyname(host)) != NULL) {
                 memcpy(&sin.sin_addr, phe->h_addr, phe->h_length);
         }
         else if ( (sin.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE )

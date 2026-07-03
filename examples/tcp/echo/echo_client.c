@@ -45,9 +45,9 @@ int main(int argc, char **argv)
 	bzero((char *)&server, sizeof(struct sockaddr_in));
 	server.sin_family = AF_INET;
 	server.sin_port = htons(port);
-	if (hp = gethostbyname(host)) 
+	if ((hp = gethostbyname(host)) != NULL)
 	  bcopy(hp->h_addr, (char *)&server.sin_addr, hp->h_length);
-	else if ( inet_aton(host, (struct in_addr *) &server.sin_addr) ){
+	else if (!inet_aton(host, (struct in_addr *) &server.sin_addr)) {
 	  fprintf(stderr, "Can't get server's address\n");
 	  exit(1);
 	}
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 	}
 
 	printf("Transmit: \n");
-	while(n=read(0, sbuf, BUFLEN)){	/* get user message */
+	while ((n = read(0, sbuf, BUFLEN)) > 0) {	/* get user message */
 	  write(sd, sbuf, n);		/* send it out */
 	  printf("Receive: \n");
 	  bp = rbuf;

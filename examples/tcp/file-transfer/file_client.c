@@ -6,14 +6,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define PORT  3000
-#define CHUNK 100
+#define DEFAULT_PORT 3000
+#define CHUNK 1024
 #define IP_ADDR "127.0.0.1" // this can be overriden by argv[1],
 //so when can do this ./file_client 192.168.0.10 <- to override the IP_ADDR
 
 
 int main(int argc, char **argv) {
     int sd;
+    int port = DEFAULT_PORT;
     struct sockaddr_in server;
     char filename[100];
     char buf[CHUNK];
@@ -24,7 +25,13 @@ int main(int argc, char **argv) {
     }
     memset(&server, 0, sizeof(server));
     server.sin_family = AF_INET;
-    server.sin_port   = htons(PORT);
+    if (argc > 3) {
+        fprintf(stderr, "Usage: %s [host] [port]\n", argv[0]);
+        return 1;
+    }
+    if (argc == 3) port = atoi(argv[2]);
+
+    server.sin_port   = htons(port);
 
     // this is what line 12 explained
     const char *ip = (argc >= 2) ? argv[1] : IP_ADDR;
@@ -44,31 +51,32 @@ int main(int argc, char **argv) {
 
     // include the null terminator
     send(sd, filename, strlen(filename) + 1, 0);
-    // the first byte is always a flag: 'D' for data, 'E' for error
-    n = recv(sd, buf, sizeof(buf), 0);
-    if (n <= 0) {
+    // The first byte is a status: 'D' for data or 'E' for error.
+    char type;
+    n = (int)recv(sd, &type, 1, 0);
+    if (n != 1) {
         printf("no response\n");
         close(sd); return 1;
     }
 
-    char type = buf[0]; //flag byte
-
-    //error
     if (type == 'E') {
-        printf("server error: %.*s\n", n - 1, buf + 1);
-    // works
+        n = (int)recv(sd, buf, sizeof(buf) - 1, 0);
+        if (n < 0) n = 0;
+        buf[n] = '\0';
+        printf("server error: %s\n", buf);
     } else if (type == 'D') {
         FILE *fp = fopen(filename, "wb"); //binary
         if (!fp) { perror("fopen"); close(sd); return 1; }
 
-
-        fwrite(buf + 1, 1, n - 1, fp); // first chunk, skip flag byte
-
         while ((n = recv(sd, buf, sizeof(buf), 0)) > 0)
-            fwrite(buf, 1, n, fp); // remaining chunks
+            fwrite(buf, 1, (size_t)n, fp);
 
         fclose(fp);
         printf("downloaded '%s' successfully\n", filename);
+    } else {
+        fprintf(stderr, "invalid server response\n");
+        close(sd);
+        return 1;
     }
 
     close(sd);

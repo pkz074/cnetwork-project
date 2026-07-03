@@ -24,16 +24,25 @@ int main(int argc, char *argv[]) {
 
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);   //create UDP socket
+    if (sock < 0) {
+        perror("socket");
+        return 1;
+    }
 
+    memset(&server, 0, sizeof(server));
     server.sin_family = AF_INET;
     server.sin_port = htons(port);
-    inet_pton(AF_INET, server_ip, &server.sin_addr);  //converts IP string to binary form
+    if (inet_pton(AF_INET, server_ip, &server.sin_addr) != 1) {
+        fprintf(stderr, "Invalid IPv4 address: %s\n", server_ip);
+        close(sock);
+        return 1;
+    }
 
     connect(sock, (struct sockaddr *)&server, sizeof(server));  //associates socket with server address and lets read and write happen 
 
     while (1) {   //infinit loop to allow multiple downloads
         printf("Enter filename (or type quit): ");
-        scanf("%s", packet.data);                 //read file form user
+        if (scanf("%99s", packet.data) != 1) break; //read file from user
 
         if (strcmp(packet.data, "quit") == 0) break;  //exit if user typed quit
 

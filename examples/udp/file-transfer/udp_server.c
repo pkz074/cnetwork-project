@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
-#define PORT 3000     #the default port number the server will run on
+#define PORT 3000     /* default server port */
 
 struct pdu {             //PDU is the protocol data unit
     char type;
@@ -21,12 +21,21 @@ int main(int argc, char *argv[]) {
     if (argc == 2) port = atoi(argv[1]);    //if user enters a port number it will override the default port number
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);   // create udp socket and AF_INET is IPv4
+    if (sock < 0) {
+        perror("socket");
+        return 1;
+    }
 
+    memset(&server, 0, sizeof(server));
     server.sin_family = AF_INET;       //mspecify IPv4 addresing
     server.sin_addr.s_addr = INADDR_ANY;   //accept connections from any IP address
     server.sin_port = htons(port);       //convert the port to network byte order
 
-    bind(sock, (struct sockaddr *)&server, sizeof(server));  //binding the socket to IP and port so it can receive data
+    if (bind(sock, (struct sockaddr *)&server, sizeof(server)) < 0) {
+        perror("bind");
+        close(sock);
+        return 1;
+    }
 
     printf("Server running on port %d...\n", port);
 

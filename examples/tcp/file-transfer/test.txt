@@ -1,0 +1,2 @@
+Socket programming connects processes across a network.
+This sample file verifies that the TCP and UDP examples preserve file contents across multiple packets.

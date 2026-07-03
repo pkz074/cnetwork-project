@@ -2,10 +2,10 @@
 /* Run on VM1 with SERVER_TCP_PORT*/
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/unistd.h>
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <sys/signal.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <strings.h>
@@ -18,7 +18,8 @@ void reaper(int);
 
 int main(int argc, char **argv)
 {
-	int 	sd, new_sd, client_len, port;
+	int 	sd, new_sd, port;
+	socklen_t client_len;
 	struct	sockaddr_in server, client;
 
 	switch(argc){
@@ -72,6 +73,7 @@ int main(int argc, char **argv)
 
 void	reaper(int sig)
 {
-	int	status;
-	while(wait3(&status, WNOHANG, (struct rusage *)0) >= 0);
+	(void)sig;
+	while (waitpid(-1, NULL, WNOHANG) > 0) {
+	}
 }
